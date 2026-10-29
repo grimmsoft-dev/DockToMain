@@ -1,0 +1,1 @@
+{ "Commands": ["WidgetReflector"], "Cvars": ["DockToMain.Enabled"], "Expect": ["TEST DockToMain.Enabled = 1", "Docked '.+' into the main window"] }

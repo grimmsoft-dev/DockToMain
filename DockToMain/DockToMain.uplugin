@@ -1,0 +1,13 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "1.0.0",
+  "FriendlyName": "Dock To Main Window",
+  "Description": "Editor-only: tabs that would open as separate floating windows are docked into the main editor window instead.",
+  "Category": "Editor",
+  "EnabledByDefault": true,
+  "CanContainContent": false,
+  "Modules": [
+    { "Name": "DockToMain", "Type": "Editor", "LoadingPhase": "PostEngineInit" }
+  ]
+}
