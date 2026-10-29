@@ -17,7 +17,7 @@ The plugin is editor-only: it is never included in packaged games.
 
 1. Download `DockToMain-<version>-Installer.zip` from [Releases](../../releases) and unzip it.
 2. Run `Install.bat`.
-3. Tick the engines to install into (every project using that engine gets the plugin), or pick a single `.uproject`.
+3. Tick the engines to install into (every project using that engine gets the plugin), or pick a single `.uproject`. If an engine isn't listed (moved, copied or source-built), click **Add engine folder...** and choose its folder.
 4. Click **Install**, then restart Unreal Editor.
 
 If an engine is installed under `Program Files`, right-click `Install.bat` and choose **Run as administrator**.
@@ -26,6 +26,7 @@ From a console:
 
 ```bat
 Install.bat -Engine 5.6
+Install.bat -Engine "D:\Engines\UE_5.6"
 Install.bat -Project "D:\MyGame\MyGame.uproject"
 Install.bat -Engine 5.6 -Uninstall
 ```

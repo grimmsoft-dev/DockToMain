@@ -20,6 +20,7 @@ $Manifest = Get-Content (Join-Path $Stage.FullName 'manifest.json') -Raw | Conve
 
 $targets = @(Find-UE5Engines | Where-Object { $Manifest.Builds -contains $_.Version })
 if ($Engines) { $targets = @($targets | Where-Object { $Engines -contains $_.Version }) }
+$targets = @($targets | Group-Object Version | ForEach-Object { $_.Group[0] }) # one run per engine version
 
 $results = foreach ($engine in $targets) {
     Write-Host "[$Name] Testing on UE $($engine.Patch)..."
@@ -34,6 +35,7 @@ $results = foreach ($engine in $targets) {
 
     Copy-Item (Join-Path $PSScriptRoot 'Test.py') (Join-Path $dir 'Content\Python\init_unreal.py')
     Copy-Item (Join-Path $PSScriptRoot 'TestConfig.json') (Join-Path $dir 'Content\Python\TestConfig.json')
+    if (Test-Path (Join-Path $PSScriptRoot 'TestChecks.py')) { Copy-Item (Join-Path $PSScriptRoot 'TestChecks.py') (Join-Path $dir 'Content\Python\') }
     if ($Config.Ini) {
         $ini = foreach ($section in $Config.Ini.PSObject.Properties) {
             "[$($section.Name)]"; foreach ($kv in $section.Value.PSObject.Properties) { "$($kv.Name)=$($kv.Value)" }
@@ -55,7 +57,7 @@ $results = foreach ($engine in $targets) {
 
     $log = Join-Path $dir 'Saved\Logs\TestProject.log'
     $text = if (Test-Path $log) { Get-Content $log -Raw } else { '' }
-    $missing = @($Config.Expect | Where-Object { $text -notmatch $_ })
+    $missing = @($Config.Expect | Where-Object { $text -notmatch $_ }) + @($Config.Forbid | Where-Object { $_ -and $text -match $_ } | ForEach-Object { "forbidden: $_" })
     # The D3D12 RHI can ensure on its swap chain under -RenderOffscreen; that's the test setup, not the plugin.
     $ensures = @([regex]::Matches($text, 'Ensure condition failed:[^\r\n]*') | Where-Object { $_.Value -notmatch 'RHI\\Private' }).Count
     $ok = $installed -and $text -match 'TEST done' -and -not $missing -and $ensures -eq 0

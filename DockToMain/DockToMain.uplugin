@@ -1,7 +1,7 @@
 {
   "FileVersion": 3,
-  "Version": 1,
-  "VersionName": "1.0.0",
+  "Version": 2,
+  "VersionName": "1.0.1",
   "FriendlyName": "Dock To Main Window",
   "Description": "Editor-only: tabs that would open as separate floating windows are docked into the main editor window instead.",
   "Category": "Editor",

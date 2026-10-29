@@ -7,6 +7,11 @@ import os
 
 import unreal
 
+try:
+    import TestChecks  # optional plugin-specific helpers for "Eval" expressions
+except ImportError:
+    TestChecks = None
+
 _frames = 0
 
 
@@ -21,6 +26,8 @@ def _tick(delta_seconds):
         elif _frames == 180:
             for name in _config.get("Cvars", []):
                 unreal.log("TEST {} = {:g}".format(name, unreal.SystemLibrary.get_console_variable_float_value(name)))
+            for expression in _config.get("Eval", []):
+                unreal.log("TEST {} = {}".format(expression, eval(expression)))
             unreal.log("TEST done")
             _finish()
     except Exception as error:

@@ -27,6 +27,7 @@ New-Item -ItemType Directory -Force $LogDir | Out-Null
 if (-not $PackageOnly) {
     $all = @(Find-UE5Engines | Where-Object Installed)
     if ($Engines) { $all = @($all | Where-Object { $Engines -contains $_.Version }) }
+    $all = @($all | Group-Object Version | ForEach-Object { $_.Group[0] }) # one build per engine version
     if (-not $all) { throw 'No matching UE5 engine installs found.' }
 
     # UE 5.0-5.3 don't compile with the newest MSVC; pin them to the newest 14.3x toolchain installed (14.36 is Epic's pick).
@@ -60,7 +61,7 @@ if (-not $PackageOnly) {
         $env:DOTNET_ROLL_FORWARD = if ([version]$engine.Version -lt [version]'5.2') { 'Major' } else { $null }
 
         $buildBat = Join-Path $engine.Root 'Engine\Build\BatchFiles\Build.bat'
-        cmd /c "`"$buildBat`" UnrealEditor Win64 Development `"-Project=$hostProject`" `"-plugin=$hostPlugin\$Name.uplugin`" -noubtmakefiles -nohotreload$extra > `"$log`" 2>&1"
+        cmd /c "`"$buildBat`" UnrealEditor Win64 Development `"-Project=$hostProject`" `"-plugin=$hostPlugin\$Name.uplugin`" -noubtmakefiles -nohotreload `"-log=$LogDir\UBT-UE$($engine.Version).txt`"$extra > `"$log`" 2>&1"
         $ok = $LASTEXITCODE -eq 0
         if ($ok) {
             # Ship binaries and source only: drop intermediates and debug symbols.
@@ -86,7 +87,14 @@ New-Item -ItemType Directory -Force (Join-Path $stage 'Builds'), (Join-Path $sta
 
 Copy-Item (Join-Path $Root 'Installer\*') $stage
 Copy-Item (Join-Path $Root 'README.md') $stage -ErrorAction SilentlyContinue
-foreach ($v in $built) { Copy-Item (Join-Path $BuildDir "UE$v") (Join-Path $stage 'Builds') -Recurse }
+foreach ($v in $built) {
+    Copy-Item (Join-Path $BuildDir "UE$v") (Join-Path $stage 'Builds') -Recurse
+    # Ship the current descriptor (version, description) with older binaries, as long as the modules still match.
+    $stagedDescriptor = Join-Path $stage "Builds\UE$v\$Name\$Name.uplugin"
+    $builtModules = ((Get-Content $stagedDescriptor -Raw | ConvertFrom-Json).Modules.Name | Sort-Object) -join ','
+    if ($builtModules -ne (($Descriptor.Modules.Name | Sort-Object) -join ',')) { throw "UE $v build is out of date (modules changed); run Build.ps1 without -PackageOnly." }
+    Copy-Item $PluginFile.FullName $stagedDescriptor -Force
+}
 $src = New-Item -ItemType Directory -Force (Join-Path $stage "Source\$Name")
 Copy-Item $PluginFile.FullName $src
 foreach ($sub in 'Source', 'Resources', 'Config', 'Content') {
